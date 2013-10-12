@@ -78,6 +78,9 @@
     <EmbeddedResource Include="src\Belepes.resx">
       <DependentUpon>Belepes.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="src\Bongeszo.resx">
+      <DependentUpon>Bongeszo.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="src\Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>

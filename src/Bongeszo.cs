@@ -6,14 +6,22 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using System.IO;
 
 namespace bot_v4
 {
     public partial class Bongeszo : Form
     {
-        static Random R = new Random();
-        static WebBrowser web;
+        private static Random R = new Random();
+        private static WebBrowser web;
         private string data; //user login data
+        private static bool botvedelem = false; //bot protection
+        private static bool mehet = true; //enables/disables the specific bot apps to run
+        private static Falvak[] falvak; //villages data: ID, name, koord
+        //------------------------GUI vars
+        private static Label url = new Label(); //url label
+        private static Button betoltve = new Button(); //villages data load button
+        //------------------------
 
         public Bongeszo(string data)
         {
@@ -27,10 +35,12 @@ namespace bot_v4
             Belep();
         }
 
-        static Timer[] belep = new Timer[6];
+        private static Timer[] belep = new Timer[6];
+        private static Timer pirosgomb = new Timer();
         private void Timer_init()
         {
             //------------------------Timers initalize
+            #region belep timers
             for (int i = 0; i < belep.Length; i++)
                 belep[i] = new Timer();
             //------------------------1) webbrowser setup
@@ -39,7 +49,7 @@ namespace bot_v4
             //------------------------2) website load for login info
             //for slower connection, so the program won't crash
             //document_completed could do this too, but for now this is enough
-            //TODO: document_completed
+            //TODO: document_completed version
             belep[1].Interval = R.Next(1200, 1800);
             belep[1].Tick += new EventHandler(belep2_Tick);
             //------------------------3) login data fill
@@ -57,8 +67,13 @@ namespace bot_v4
             belep[5].Interval = R.Next(2000, 2200);
             //slower connection + lot villages = this time needed atleast
             belep[5].Tick += new EventHandler(belep6_Tick);
+            #endregion
+            //------------------------
+            pirosgomb.Interval = R.Next(500, 750);
+            pirosgomb.Tick += new EventHandler(pirosgomb_Tick);
         }
 
+        #region login
         private void Belep()
         {
             //------------------------Webbrowser settings
@@ -142,16 +157,121 @@ namespace bot_v4
             //------------------------
             belep[5].Start();
         }
-
+        #endregion
         void belep6_Tick(object sender, EventArgs e)
         {
-            //------------------------
+            //------------------------GUI setup
             belep[5].Stop();
+            //------------------------bot protection check
+            if (web.Document.GetElementById("bot_check_image") != null)
+                botvedelem = true;
+            //------------------------GUI
+            else
+            {
+                //------------------------Current URL
+                Controls.Add(url);
+                url.Text = web.Url.ToString();
+                url.Location = new Point(10, 8);
+                url.Size = new System.Drawing.Size(355, 16);
+                //------------------------Villages data load button
+                Controls.Add(betoltve);
+                betoltve.Text = "";
+                betoltve.Location = new Point(375, 4);
+                betoltve.Size = new Size(20, 20);
+                betoltve.BackColor = Color.Red;
+                betoltve.Click += new EventHandler(betoltve_Click); //data load/reload
+                //------------------------
+
+                pirosgomb.Start();
+            }
+        }
+
+        void betoltve_Click(object sender, EventArgs e)
+        {
+            //------------------------Color check, always should run without any problem
+            if (betoltve.BackColor != Color.Red)
+            {
+                betoltve.BackColor = Color.Red;
+                pirosgomb.Start();
+            }
+        }
+
+        void pirosgomb_Tick(object sender, EventArgs e)
+        {
+            //------------------------disable other apps to run & load village data
+            pirosgomb.Stop();
+            mehet = false;
+            Betoltes();
+        }
+
+        private void Betoltes()
+        {
+            //------------------------Villages data load/reload
+            string seged;
+            Falvak[] seged_falvak = new Falvak[1000]; //temp array for max 1000 villages
+            int i = 0; //index for the array
+            int id = 0; //village's ID
+            string nev = ""; //village's name
+            string koord = ""; //village's koord
+            //------------------------get data to the temp array
+            foreach (HtmlElement element in web.Document.GetElementsByTagName("SPAN"))
+            {
+                seged = element.GetAttribute("id");
+                try
+                {
+                    seged = seged.Substring(0, 11);
+                }
+                catch (ArgumentOutOfRangeException)
+                { }
+                if (seged == "label_text_")
+                {
+                    seged = element.GetAttribute("id");
+                    id = Convert.ToInt32(seged.Substring(11));
+                    seged = element.GetAttribute("innerHTML");
+                    nev = seged.Substring(0, seged.IndexOf("(") - 1);
+                    seged = element.GetAttribute("innerHTML");
+                    koord = seged.Substring(seged.IndexOf("(") + 1, seged.IndexOf(")") - seged.IndexOf("(") - 1);
+                    seged_falvak[i] = new Falvak(id, nev, koord);
+                    i++;
+                }
+            }
+            //------------------------Count the villages
+            i = 0;
+            while (seged_falvak[i] != null)
+                i++;
+            //------------------------Permament villages array
+            falvak = new Falvak[i];
+            for (int j = 0; j < i; j++)
+                falvak[j] = seged_falvak[j];
+            //------------------------Storage not max population villages
+            if (File.Exists("nm.txt"))
+                File.Delete("nm.txt"); //because sometimes the program f*cked up and double saved the datas
+            StreamWriter sw = new StreamWriter("nm.txt", false);
+            int s1, s2; //population
+            int index = 0; //village index
+            foreach (HtmlElement element in web.Document.GetElementsByTagName("TD"))
+            {
+                string seged_nm;
+                seged_nm = element.GetAttribute("innerHTML");
+                if (seged_nm != "" && seged_nm.Length <= 12 && seged_nm.IndexOf('/') > 1)
+                {
+                    index++;
+                    s1 = Convert.ToInt32(seged_nm.Substring(0, seged_nm.IndexOf('/')));
+                    s2 = Convert.ToInt32(seged_nm.Substring(seged_nm.IndexOf('/') + 1));
+                    if (s1 != s2)
+                        sw.WriteLine(index);
+                }
+            }
+            sw.Close();
+            //------------------------Data loaded -> color red -> green
+            betoltve.BackColor = Color.LightGreen;
+            mehet = true;
+            web.Navigate("http://" + "hu17.klanhaboru.hu/game.php?village=" + falvak[0].id + "&screen=overview_villages");
         }
 
         void web_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
         {
-            
+            url.Text = web.Url.ToString();
         }
 
         private void Bongeszo_FormClosing(object sender, FormClosingEventArgs e)

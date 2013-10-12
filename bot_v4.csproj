@@ -59,6 +59,7 @@
     <Compile Include="src\Bongeszo.Designer.cs">
       <DependentUpon>Bongeszo.cs</DependentUpon>
     </Compile>
+    <Compile Include="src\Falvak.cs" />
     <Compile Include="src\Form1.cs">
       <SubType>Form</SubType>
     </Compile>

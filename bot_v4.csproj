@@ -53,6 +53,12 @@
     <Compile Include="src\Belepes.Designer.cs">
       <DependentUpon>Belepes.cs</DependentUpon>
     </Compile>
+    <Compile Include="src\Bongeszo.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="src\Bongeszo.Designer.cs">
+      <DependentUpon>Bongeszo.cs</DependentUpon>
+    </Compile>
     <Compile Include="src\Form1.cs">
       <SubType>Form</SubType>
     </Compile>

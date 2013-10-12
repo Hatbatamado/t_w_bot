@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using System.IO;
 
 namespace bot_v4
 {
@@ -41,6 +42,34 @@ namespace bot_v4
         void bot_Click(object sender, EventArgs e)
         {
             //------------------------Run bot
+            string seged = Belephet();
+            if (seged != "")
+            {
+                Bongeszo gui = new Bongeszo(seged);
+                this.Hide();
+                gui.Show();
+            }
+        }
+
+        private string Belephet()
+        {
+            //------------------------Login data check
+            string vissza = "";
+            if (File.Exists("belep.txt"))
+            {
+                StreamReader sr = new StreamReader("belep.txt");
+                string felh = sr.ReadLine();
+                string jel = sr.ReadLine();
+                sr.Close();
+
+                if (felh == null || felh == "" || felh == " ")
+                    MessageBox.Show("A belépési adatok hiányzoknak");
+                else
+                    vissza = felh + " " + jel;
+            }
+            else
+                MessageBox.Show("A belépési adatok hiányzoknak");
+            return vissza;
         }
 
         void belep_Click(object sender, EventArgs e)

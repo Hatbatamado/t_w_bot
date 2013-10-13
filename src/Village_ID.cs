@@ -7,8 +7,6 @@ namespace bot_v4
 {
     class Village_ID
     {
-        private string seged1;
-        private string seged2;
         public string seged5;
         public string seged3;
         public Village_ID(string url,Falvak[] falvak, int[]segednem2, string merre)
@@ -21,8 +19,6 @@ namespace bot_v4
             if (seged3.Substring(5, 1) == "&") seged3 = url.Substring(43, 5);
             //------------------------
             this.seged3 = seged3;
-            this.seged1 = seged1;
-            this.seged2 = seged2;
             //------------------------
             int faluseged = Convert.ToInt32(seged3);
             if (falvak != null)
@@ -31,13 +27,13 @@ namespace bot_v4
                 int[] seged = new int[falvak.Length];
                 for (int j = 0; j < seged.Length; j++)
                     seged[j] = falvak[j].id;
-                Tovabb(seged, faluseged, merre);
+                Tovabb(seged, faluseged, merre, seged1, seged2);
             }
             else if (segednem2 != null)
-                Tovabb(segednem2, faluseged, merre);
+                Tovabb(segednem2, faluseged, merre, seged1, seged2);
         }
 
-        private void Tovabb(int[] tomb, int faluseged, string merre)
+        private void Tovabb(int[] tomb, int faluseged, string merre, string seged1, string seged2)
         {
             int i = 0;
             int seged4 = 0;

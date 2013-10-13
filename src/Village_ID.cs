@@ -11,7 +11,7 @@ namespace bot_v4
         public int seged;
         public string seged1;
         public string seged2;
-        public Village_ID(string merre, string url)
+        public Village_ID(string url)
         {
             string seged1 = url.Substring(0, 43); //begin
             string seged2 = url.Substring(48); //end

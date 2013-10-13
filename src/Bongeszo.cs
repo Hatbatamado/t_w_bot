@@ -17,7 +17,7 @@ namespace bot_v4
         private static WebBrowser web;
         private string data; //user login data
         private static bool botvedelem = false; //bot protection
-        private static bool mehet = true; //enables/disables the specific bot apps to run
+        private static bool mehet = false; //enables/disables the specific bot apps to run
         private static Falvak[] falvak; //villages data: ID, name, koord
         private static int kattintas = 0; //nm_button click count
         private static int[] segednem2; //temp array for sorted villages
@@ -318,7 +318,7 @@ namespace bot_v4
         {
             //------------------------Navigate
             //------------------------Get the current village's ID
-            Village_ID vi = new Village_ID(merre, url.Text);
+            Village_ID vi = new Village_ID(url.Text);
             int faluseged = vi.seged;
             int i = 0;
             int seged4 = 0;
@@ -454,7 +454,7 @@ namespace bot_v4
         {
             //------------------------Navigate
             //------------------------Get the current village's ID
-            Village_ID vi = new Village_ID(merre, url.Text);
+            Village_ID vi = new Village_ID(url.Text);
             int faluseged = vi.seged;
             int i = 0;
             int seged4 = 0;
@@ -615,6 +615,47 @@ namespace bot_v4
         private void web_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
         {
             url.Text = web.Url.ToString();
+            if (botvedelem)
+            {
+                System.Media.SoundPlayer player = new System.Media.SoundPlayer(@"dinding.wav");
+                player.Play();
+                botvedelem = false;
+            }
+            else if (mehet && !botvedelem)
+            {
+                //------------------------Set the village types
+                #region vill_type
+                Village_ID vi = new Village_ID(url.Text);
+                string seged = vi.seged.ToString();
+                string seged2;
+                string[] seged3;
+                bool megvan = false;
+                StreamReader sr = new StreamReader("tipus.txt");
+                while (!sr.EndOfStream)
+                {
+                    seged2 = sr.ReadLine();
+                    seged3 = seged2.Split(' ');
+                    if (seged == seged3[0])
+                    {
+                        if (seged3[1] == "támadó")
+                            tamado.Checked = true;
+                        else if (seged3[1] == "védő")
+                            vedo.Checked = true;
+                        else if (seged3[1] == "kém")
+                            kem.Checked = true;
+                        megvan = true;
+                    }
+                }
+                sr.Close();
+                if (!megvan)
+                {
+                    tamado.Checked = false;
+                    vedo.Checked = false;
+                    kem.Checked = false;
+                }
+                #endregion
+                //------------------------
+            }
         }
 
         private void Bongeszo_FormClosing(object sender, FormClosingEventArgs e)

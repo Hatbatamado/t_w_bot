@@ -25,16 +25,34 @@ namespace bot_v4
         //------------------------GUI vars
         #region GUI vars
         private static Label url = new Label(); //url label
-        private static Button betoltve = new Button(); //villages data load button
-        private static Button bbb = new Button(); //navigate left
-        private static Button jjj = new Button(); //navigate right
+        //------------------------
         private static CheckBox tamado = new CheckBox(); //village type: attacker
         private static CheckBox vedo = new CheckBox(); //village type: defender
         private static CheckBox kem = new CheckBox(); //village type: spy
+        //------------------------
+        private static Button betoltve = new Button(); //villages data load button
+        private static Button bbb = new Button(); //navigate left
+        private static Button jjj = new Button(); //navigate right
         private static Button ok = new Button(); //village type change confirm
         private static Button nm = new Button(); //not max population villages
         private static Button ujbal = new Button(); //sorted villages button (left)
         private static Button ujjobb = new Button(); //sorted villages button (right)
+        //------------------------
+        private static Rejt rejt;
+        private static Village_ID vi;
+        //------------------------
+        private static Button[] gombok = new Button[7];
+
+        private void Gombok_fel()
+        {
+            gombok[0] = betoltve;
+            gombok[1] = bbb;
+            gombok[2] = jjj;
+            gombok[3] = ok;
+            gombok[4] = nm;
+            gombok[5] = ujbal;
+            gombok[6] = ujjobb;
+        }
         #endregion
 
         public Bongeszo(string data)
@@ -45,10 +63,12 @@ namespace bot_v4
             this.Location = new Point(0, 0);
             //------------------------
             this.data = data;
+            Gombok_fel();
             Timer_init();
             Belep();
         }
 
+        #region Timers
         private static Timer[] belep = new Timer[6];
         private static Timer pirosgomb = new Timer();
         private void Timer_init()
@@ -86,6 +106,7 @@ namespace bot_v4
             pirosgomb.Interval = R.Next(500, 750);
             pirosgomb.Tick += new EventHandler(pirosgomb_Tick);
         }
+        #endregion
 
         #region login
         private void Belep()
@@ -172,6 +193,8 @@ namespace bot_v4
             belep[5].Start();
         }
         #endregion
+
+        #region GUI
         private void belep6_Tick(object sender, EventArgs e)
         {
             //------------------------GUI setup
@@ -179,9 +202,10 @@ namespace bot_v4
             //------------------------bot protection check
             if (web.Document.GetElementById("bot_check_image") != null)
                 botvedelem = true;
-            //------------------------GUI
             else
             {
+                //------------------------GUI
+                #region GUI_init
                 //------------------------Current URL
                 Controls.Add(url);
                 url.Text = web.Url.ToString();
@@ -237,7 +261,7 @@ namespace bot_v4
                 nm.Size = new System.Drawing.Size(60, 22);
                 nm.BackColor = Color.LightGreen;
                 nm.Click += new EventHandler(nm_Click);
-
+                #endregion
                 pirosgomb.Start();
             }
         }
@@ -250,27 +274,13 @@ namespace bot_v4
             kattintas++;
             if (!(kattintas % 2 == 0))
             {
-                nm.Text = "Stop";
-                nm.BackColor = Color.Red;
-                bbb.Enabled = false;
-                jjj.Enabled = false;
-                ok.Enabled = false;
+                rejt = new Rejt(gombok, nm, "rejt");
                 NM();
             }
             else
             {
                 nm.Text = "Nemmax";
-                nm.BackColor = Color.LightGreen;
-                bbb.Enabled = true;
-                jjj.Enabled = true;
-                ok.Enabled = true;
-                if (ujbal != null && ujjobb != null)
-                {
-                    ujbal.Visible = false;
-                    ujbal.Enabled = false;
-                    ujjobb.Visible = false;
-                    ujjobb.Enabled = false;
-                }
+                rejt = new Rejt(gombok, nm, "mutat");
             }
         }
 
@@ -296,12 +306,16 @@ namespace bot_v4
                 segednem2[j - 1] = falvak[segednem[j - 1] - 1].id;
             //------------------------Navigate left
             Controls.Add(ujbal);
+            ujbal.Visible = true;
+            ujbal.Enabled = true;
             ujbal.Text = "<-";
             ujbal.Size = new System.Drawing.Size(30, 22);
             ujbal.Location = new Point(340, 24);
             ujbal.Click += new EventHandler(ujbal_Click);
             //------------------------Navigate right
             Controls.Add(ujjobb);
+            ujjobb.Visible = true;
+            ujjobb.Enabled = true;
             ujjobb.Text = "->";
             ujjobb.Size = new System.Drawing.Size(30, 22);
             ujjobb.Location = new Point(380, 24);
@@ -317,37 +331,8 @@ namespace bot_v4
         private string ujb_ujj(string merre, int[] segednem2)
         {
             //------------------------Navigate
-            //------------------------Get the current village's ID
-            Village_ID vi = new Village_ID(url.Text);
-            int faluseged = vi.seged;
-            int i = 0;
-            int seged4 = 0;
-            while ((faluseged != segednem2[i]) && (i < segednem2.Length - 1))
-                i++;
-            if (merre == "balra") //Navigate left
-            {
-                //------------------------Set the (current - 1) village's ID
-                if (i < segednem2.Length)
-                {
-                    if (i - 1 >= 0)
-                        seged4 = segednem2[i - 1];
-                    else
-                        seged4 = segednem2[segednem2.Length - 1];
-                }
-            }
-            else if (merre == "jobbra") //Navigate right
-            {
-                //------------------------Set the (current + 1) village's ID
-                if (i < segednem2.Length)
-                {
-                    if (i + 1 < segednem2.Length)
-                        seged4 = segednem2[i + 1];
-                    else
-                        seged4 = segednem2[0];
-                }
-            }
-            string seged5 = vi.seged1 + seged4 + vi.seged2; //URL for navigate
-            return seged5;
+            vi = new Village_ID(url.Text, null, segednem2, merre);
+            return vi.seged5;
         }
 
         private void ujjobb_Click(object sender, EventArgs e)
@@ -453,37 +438,8 @@ namespace bot_v4
         private string bbb_jjj(string merre)
         {
             //------------------------Navigate
-            //------------------------Get the current village's ID
-            Village_ID vi = new Village_ID(url.Text);
-            int faluseged = vi.seged;
-            int i = 0;
-            int seged4 = 0;
-            while ((faluseged != falvak[i].id) && (i < falvak.Length))
-                i++;
-            if (merre == "balra") //Navigate left
-            {
-                //------------------------Set the (current - 1) village's ID
-                if (i < falvak.Length)
-                {
-                    if (i - 1 >= 0)
-                        seged4 = falvak[i - 1].id;
-                    else
-                        seged4 = falvak[falvak.Length - 1].id;
-                }
-            }
-            else if (merre == "jobbra") //Navigate right
-            {
-                //------------------------Set the (current + 1) village's ID
-                if (i < falvak.Length)
-                {
-                    if (i + 1 < falvak.Length)
-                        seged4 = falvak[i + 1].id;
-                    else
-                        seged4 = falvak[0].id;
-                }
-            }
-            string seged5 = vi.seged1 + seged4 + vi.seged2; //URL for navigate
-            return seged5;
+            vi = new Village_ID(url.Text, falvak, null, merre);
+            return vi.seged5;
         }
 
         private void bbb_Click(object sender, EventArgs e)
@@ -611,6 +567,7 @@ namespace bot_v4
             }
         }
         #endregion
+        #endregion
 
         private void web_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
         {
@@ -625,8 +582,8 @@ namespace bot_v4
             {
                 //------------------------Set the village types
                 #region vill_type
-                Village_ID vi = new Village_ID(url.Text);
-                string seged = vi.seged.ToString();
+                vi = new Village_ID(url.Text, null, null, null);
+                string seged = vi.seged3.ToString();
                 string seged2;
                 string[] seged3;
                 bool megvan = false;

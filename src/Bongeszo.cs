@@ -29,6 +29,7 @@ namespace bot_v4
         private static CheckBox tamado = new CheckBox(); //village type: attacker
         private static CheckBox vedo = new CheckBox(); //village type: defender
         private static CheckBox kem = new CheckBox(); //village type: spy
+        private static CheckBox ddd = new CheckBox(); //market checkbox
         //------------------------
         private static Button betoltve = new Button(); //villages data load button
         private static Button bbb = new Button(); //navigate left
@@ -36,7 +37,7 @@ namespace bot_v4
         private static Button ok = new Button(); //village type change confirm
         private static Button nm = new Button(); //not max population villages
         private static Button ujbal = new Button(); //sorted villages button (left)
-        private static Button ujjobb = new Button(); //sorted villages button (right)
+        private static Button ujjobb = new Button(); //sorted villages button (right)        
         //------------------------
         private static Rejt rejt;
         private static Village_ID vi;
@@ -261,10 +262,118 @@ namespace bot_v4
                 nm.Size = new System.Drawing.Size(60, 22);
                 nm.BackColor = Color.LightGreen;
                 nm.Click += new EventHandler(nm_Click);
+                //------------------------Market
+                Controls.Add(ddd);
+                ddd.Text = "piac";
+                ddd.Location = new Point(500, 4);
+                ddd.Size = new System.Drawing.Size(50, 22);
+                ddd.Checked = false;
+                ddd.CheckedChanged += new EventHandler(ddd_CheckedChanged);
                 #endregion
                 pirosgomb.Start();
             }
         }
+        #region Market checkbox
+        private void ddd_CheckedChanged(object sender, EventArgs e)
+        {
+            //------------------------Market
+            if (ddd.Checked)
+            {
+                url.Text = web.Url.ToString(); //update the url
+                Piac();
+            }
+        }
+
+        private void Piac()
+        {
+            //------------------------Market
+            //------------------------resources equator
+            int fa = 0, agyag = 0, vas = 0; //resources
+            string seged = url.Text.Substring(url.Text.Length - 21); //url end
+            //------------------------
+            if (web.Document.GetElementById("wood") != null && web.Document.GetElementById("stone") != null && web.Document.GetElementById("iron") != null)
+            {
+                fa = Convert.ToInt32(web.Document.GetElementById("wood").GetAttribute("innerHTML")) - 50; //-50 so won't all the tree equal
+                agyag = Convert.ToInt32(web.Document.GetElementById("stone").GetAttribute("innerHTML")) - 100; //-100 so won't all the tree equal
+                vas = Convert.ToInt32(web.Document.GetElementById("iron").GetAttribute("innerHTML"));
+            }
+            //------------------------
+            if (seged == "market&mode=own_offer")
+            {
+                //------------------------Market own offer
+                //------------------------Standard value: 1000
+                foreach (HtmlElement element in web.Document.GetElementsByTagName("INPUT"))
+                {
+                    if (element.GetAttribute("name") == "sell")
+                    {
+                        element.SetAttribute("value", Convert.ToString(1000));
+                    }
+                }
+                //------------------------Standard value: 1000
+                foreach (HtmlElement element in web.Document.GetElementsByTagName("INPUT"))
+                {
+                    if (element.GetAttribute("name") == "buy")
+                    {
+                        element.SetAttribute("value", Convert.ToString(1000));
+                    }
+                }
+                if (web.Document.GetElementById("res_sell_wood") != null && web.Document.GetElementById("res_sell_stone") != null && web.Document.GetElementById("res_sell_iron") != null)
+                {
+                    //------------------------Max value
+                    if (fa > agyag && fa > vas)
+                        web.Document.GetElementById("res_sell_wood").InvokeMember("click");
+                    else if (agyag > fa && agyag > vas)
+                        web.Document.GetElementById("res_sell_stone").InvokeMember("click");
+                    else if (vas > fa && vas > agyag)
+                        web.Document.GetElementById("res_sell_iron").InvokeMember("click");
+                    //------------------------Min value
+                    if (fa < agyag && fa < vas)
+                        web.Document.GetElementById("res_buy_wood").InvokeMember("click");
+                    else if (agyag < fa && agyag < vas)
+                        web.Document.GetElementById("res_buy_stone").InvokeMember("click");
+                    else if (vas < fa && vas < agyag)
+                        web.Document.GetElementById("res_buy_iron").InvokeMember("click");
+                }
+            }
+            else if (seged == "rket&mode=other_offer")
+            {
+                //------------------------Market other offer
+                foreach (HtmlElement element in web.Document.GetElementsByTagName("SELECT"))
+                {
+                    //------------------------Min value
+                    if (element.GetAttribute("name") == "res_sell")
+                    {
+                        if (fa < agyag && fa < vas)
+                            element.SetAttribute("value", "wood");
+
+                        else if (agyag < fa && agyag < vas)
+                                element.SetAttribute("value", "stone");
+                        else if (vas < fa && vas < agyag)
+                                element.SetAttribute("value", "iron");
+                    }
+                    //------------------------Max value
+                    if (element.GetAttribute("name") == "res_buy")
+                    {
+                        if (fa > agyag && fa > vas)
+                        {
+                            element.SetAttribute("value", "wood");
+                            break;
+                        }
+                        else if (agyag > fa && agyag > vas)
+                        {
+                            element.SetAttribute("value", "stone");
+                            break;
+                        }
+                        else if (vas > fa && vas > agyag)
+                        {
+                            element.SetAttribute("value", "iron");
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        #endregion
 
         #region not max pop
         private void nm_Click(object sender, EventArgs e)

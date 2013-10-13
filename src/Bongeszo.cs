@@ -12,18 +12,30 @@ namespace bot_v4
 {
     public partial class Bongeszo : Form
     {
+        #region Vars
         private static Random R = new Random();
         private static WebBrowser web;
         private string data; //user login data
         private static bool botvedelem = false; //bot protection
         private static bool mehet = true; //enables/disables the specific bot apps to run
         private static Falvak[] falvak; //villages data: ID, name, koord
+        private static int kattintas = 0; //nm_button click count
+        private static int[] segednem2; //temp array for sorted villages
+        #endregion
         //------------------------GUI vars
+        #region GUI vars
         private static Label url = new Label(); //url label
         private static Button betoltve = new Button(); //villages data load button
         private static Button bbb = new Button(); //navigate left
         private static Button jjj = new Button(); //navigate right
-        //------------------------
+        private static CheckBox tamado = new CheckBox(); //village type: attacker
+        private static CheckBox vedo = new CheckBox(); //village type: defender
+        private static CheckBox kem = new CheckBox(); //village type: spy
+        private static Button ok = new Button(); //village type change confirm
+        private static Button nm = new Button(); //not max population villages
+        private static Button ujbal = new Button(); //sorted villages button (left)
+        private static Button ujjobb = new Button(); //sorted villages button (right)
+        #endregion
 
         public Bongeszo(string data)
         {
@@ -151,7 +163,7 @@ namespace bot_v4
             belep[4].Start();
         }
 
-        void belep5_Tick(object sender, EventArgs e)
+        private void belep5_Tick(object sender, EventArgs e)
         {
             //------------------------Navigate to villages list page
             belep[4].Stop();
@@ -160,7 +172,7 @@ namespace bot_v4
             belep[5].Start();
         }
         #endregion
-        void belep6_Tick(object sender, EventArgs e)
+        private void belep6_Tick(object sender, EventArgs e)
         {
             //------------------------GUI setup
             belep[5].Stop();
@@ -194,13 +206,165 @@ namespace bot_v4
                 jjj.Size = new System.Drawing.Size(30, 22);
                 jjj.Location = new Point(455, 4);
                 jjj.Click += new EventHandler(jjj_Click);
+                //------------------------Village type: attacker
+                Controls.Add(tamado);
+                tamado.Text = "támadó";
+                tamado.Location = new Point(10, 24);
+                tamado.Size = new System.Drawing.Size(66, 22);
+                tamado.CheckedChanged += new EventHandler(tamado_CheckedChanged);
+                //------------------------Village type: defender
+                Controls.Add(vedo);
+                vedo.Text = "védő";
+                vedo.Location = new Point(80, 24);
+                vedo.Size = new System.Drawing.Size(50, 22);
+                vedo.CheckedChanged += new EventHandler(vedo_CheckedChanged);
+                //------------------------Village type: spy
+                Controls.Add(kem);
+                kem.Text = "kém";
+                kem.Location = new Point(140, 24);
+                kem.Size = new System.Drawing.Size(46, 22);
+                kem.CheckedChanged += new EventHandler(kem_CheckedChanged);
+                //------------------------Village type changed confirm
+                Controls.Add(ok);
+                ok.Text = "OK";
+                ok.Location = new Point(185, 24);
+                ok.Size = new Size(30, 22);
+                ok.Click += new EventHandler(ok_Click);
+                //------------------------Not max population villages
+                Controls.Add(nm);
+                nm.Text = "Nemmax";
+                nm.Location = new Point(230, 24);
+                nm.Size = new System.Drawing.Size(60, 22);
+                nm.BackColor = Color.LightGreen;
+                nm.Click += new EventHandler(nm_Click);
 
                 pirosgomb.Start();
             }
         }
 
+        #region not max pop
+        private void nm_Click(object sender, EventArgs e)
+        {
+            //------------------------Sort the not max population villages
+            //------------------------Enable/Disable buttons
+            kattintas++;
+            if (!(kattintas % 2 == 0))
+            {
+                nm.Text = "Stop";
+                nm.BackColor = Color.Red;
+                bbb.Enabled = false;
+                jjj.Enabled = false;
+                ok.Enabled = false;
+                NM();
+            }
+            else
+            {
+                nm.Text = "Nemmax";
+                nm.BackColor = Color.LightGreen;
+                bbb.Enabled = true;
+                jjj.Enabled = true;
+                ok.Enabled = true;
+                if (ujbal != null && ujjobb != null)
+                {
+                    ujbal.Visible = false;
+                    ujbal.Enabled = false;
+                    ujjobb.Visible = false;
+                    ujjobb.Enabled = false;
+                }
+            }
+        }
+
+        private void NM()
+        {
+            //------------------------Sort the not max population villages
+            int i = 0;
+            int[] seged = new int[1000]; //temp array for max 1000 villages
+            StreamReader sr = new StreamReader("nm.txt");
+            while (!sr.EndOfStream)
+            {
+                seged[i] = Convert.ToInt32(sr.ReadLine());
+                i++;
+            }
+            sr.Close();
+            //------------------------
+            int[] segednem = new int[i]; //temp array with perm. No.
+            for (int j = 0; j < i; j++)
+                segednem[j] = seged[j];
+            //------------------------
+            segednem2 = new int[i]; //perm. array
+            for (int j = 1; j <= segednem.Length; j++)
+                segednem2[j - 1] = falvak[segednem[j - 1] - 1].id;
+            //------------------------Navigate left
+            Controls.Add(ujbal);
+            ujbal.Text = "<-";
+            ujbal.Size = new System.Drawing.Size(30, 22);
+            ujbal.Location = new Point(340, 24);
+            ujbal.Click += new EventHandler(ujbal_Click);
+            //------------------------Navigate right
+            Controls.Add(ujjobb);
+            ujjobb.Text = "->";
+            ujjobb.Size = new System.Drawing.Size(30, 22);
+            ujjobb.Location = new Point(380, 24);
+            ujjobb.Click += new EventHandler(ujjobb_Click);
+            //------------------------Navigate to the 1st not max
+            string seged1 = url.Text.Substring(0, 43); //begin
+            string seged2 = url.Text.Substring(48); //end
+            string seged4 = segednem2[0].ToString();
+            string seged5 = seged1 + seged4 + seged2;
+            web.Navigate(seged5);
+        }
+
+        private string ujb_ujj(string merre, int[] segednem2)
+        {
+            //------------------------Navigate
+            //------------------------Get the current village's ID
+            Village_ID vi = new Village_ID(merre, url.Text);
+            int faluseged = vi.seged;
+            int i = 0;
+            int seged4 = 0;
+            while ((faluseged != segednem2[i]) && (i < segednem2.Length - 1))
+                i++;
+            if (merre == "balra") //Navigate left
+            {
+                //------------------------Set the (current - 1) village's ID
+                if (i < segednem2.Length)
+                {
+                    if (i - 1 >= 0)
+                        seged4 = segednem2[i - 1];
+                    else
+                        seged4 = segednem2[segednem2.Length - 1];
+                }
+            }
+            else if (merre == "jobbra") //Navigate right
+            {
+                //------------------------Set the (current + 1) village's ID
+                if (i < segednem2.Length)
+                {
+                    if (i + 1 < segednem2.Length)
+                        seged4 = segednem2[i + 1];
+                    else
+                        seged4 = segednem2[0];
+                }
+            }
+            string seged5 = vi.seged1 + seged4 + vi.seged2; //URL for navigate
+            return seged5;
+        }
+
+        private void ujjobb_Click(object sender, EventArgs e)
+        {
+            //------------------------Navigate right
+            web.Navigate(ujb_ujj("jobbra", segednem2));
+        }
+
+        private void ujbal_Click(object sender, EventArgs e)
+        {
+            //------------------------Navigate left
+            web.Navigate(ujb_ujj("balra", segednem2));            
+        }
+        #endregion
+
         #region betoltve
-        void betoltve_Click(object sender, EventArgs e)
+        private void betoltve_Click(object sender, EventArgs e)
         {
             //------------------------Color check, always should run without any problem
             if (betoltve.BackColor != Color.Red)
@@ -210,7 +374,7 @@ namespace bot_v4
             }
         }
 
-        void pirosgomb_Tick(object sender, EventArgs e)
+        private void pirosgomb_Tick(object sender, EventArgs e)
         {
             //------------------------disable other apps to run & load village data
             pirosgomb.Stop();
@@ -280,7 +444,8 @@ namespace bot_v4
             //------------------------Data loaded -> color red -> green
             betoltve.BackColor = Color.LightGreen;
             mehet = true;
-            web.Navigate("http://" + "hu17.klanhaboru.hu/game.php?village=" + falvak[0].id + "&screen=overview_villages");
+            web.Navigate("http://" + "hu17.klanhaboru.hu/game.php?village=" + falvak[0].id +
+                "&screen=overview_villages");
         }
         #endregion
 
@@ -289,14 +454,10 @@ namespace bot_v4
         {
             //------------------------Navigate
             //------------------------Get the current village's ID
-            string seged1 = url.Text.Substring(0, 43); //begin
-            string seged2 = url.Text.Substring(48); //end
-            if (seged2.Substring(0, 1) != "&") seged2 = url.Text.Substring(49);
-            string seged3 = url.Text.Substring(43, 6); //id
-            if (seged3.Substring(5, 1) == "&") seged3 = url.Text.Substring(43, 5);
+            Village_ID vi = new Village_ID(merre, url.Text);
+            int faluseged = vi.seged;
             int i = 0;
             int seged4 = 0;
-            int faluseged = Convert.ToInt32(seged3);
             while ((faluseged != falvak[i].id) && (i < falvak.Length))
                 i++;
             if (merre == "balra") //Navigate left
@@ -321,25 +482,137 @@ namespace bot_v4
                         seged4 = falvak[0].id;
                 }
             }
-            string seged5 = seged1 + seged4 + seged2; //URL for navigate
+            string seged5 = vi.seged1 + seged4 + vi.seged2; //URL for navigate
             return seged5;
         }
 
-
-        void bbb_Click(object sender, EventArgs e)
+        private void bbb_Click(object sender, EventArgs e)
         {
             //------------------------Navigate left
             web.Navigate(bbb_jjj("balra"));
         }
 
-        void jjj_Click(object sender, EventArgs e)
+        private void jjj_Click(object sender, EventArgs e)
         {
             //------------------------Navigate right
             web.Navigate(bbb_jjj("jobbra"));
         }
         #endregion
 
-        void web_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
+        #region village types + save + change
+        private void ok_Click(object sender, EventArgs e)
+        {
+            //------------------------Save / change the checked village type
+            string[] segedfalvak = Attolt(); //Load village types if exists
+            string seged = url.Text.Substring(43, 6); //id
+            if (seged.Substring(5, 1) == "&") seged = url.Text.Substring(43, 5); //id
+            string seged3 = "";
+            if (tamado.Checked)
+                seged3 = "támadó";
+            else if (vedo.Checked)
+                seged3 = "védő";
+            else if (kem.Checked)
+                seged3 = "kém";
+            if (seged3 != "")
+            {
+                string seged2 = "";
+                if (File.Exists("tipus.txt"))
+                {
+                    StreamReader sr = new StreamReader("tipus.txt");
+                    int i = 0;
+                    while (!sr.EndOfStream)
+                    {
+                        seged2 = sr.ReadLine();
+                        string[] feloszt = seged2.Split(' ');
+                        if (feloszt[0] == seged)
+                        {
+                            sr.Close();
+                            string[] segedf;
+                            for (int b = 0; b < segedfalvak.Length; b++)
+                            {
+                                segedf = segedfalvak[b].Split(' ');
+                                if (feloszt[0] == segedf[0])
+                                    segedfalvak[b] = feloszt[0] + " " + seged3;
+                            }
+                            StreamWriter sw = new StreamWriter("tipus.txt", false);
+                            for (int c = 0; c < segedfalvak.Length; c++)
+                            {
+                                sw.WriteLine(segedfalvak[c]);
+                            }
+                            sw.Close();
+                            break;
+                        }
+                        i++;
+                    }
+                    sr.Close();
+                    if (i == segedfalvak.Length)
+                    {
+                        StreamWriter sw = new StreamWriter("tipus.txt", true);
+                        sw.WriteLine(seged + " " + seged3);
+                        sw.Close();
+                    }
+                }
+                else
+                {
+                    StreamWriter sw = new StreamWriter("tipus.txt");
+                    sw.WriteLine(seged + " " + seged3);
+                    sw.Close();
+                }
+            }
+        }
+
+        private string[] Attolt()
+        {
+            //------------------------Load village types if exists
+            if (File.Exists("tipus.txt"))
+            {
+                int i = 0;
+                string[] seged = new string[1000]; //temp array for max 1000 villages
+                StreamReader sr = new StreamReader("tipus.txt");
+                while (!sr.EndOfStream)
+                {
+                    seged[i] = sr.ReadLine();
+                    i++;
+                }
+                sr.Close();
+                string[] segedfalvak = new string[i];
+                for (int j = 0; j < i; j++)
+                    segedfalvak[j] = seged[j];
+                return segedfalvak;
+            }
+            else
+                return null;
+        }
+
+        private void kem_CheckedChanged(object sender, EventArgs e)
+        {
+            if (kem.Checked)
+            {
+                tamado.Checked = false;
+                vedo.Checked = false;
+            }
+        }
+
+        private void vedo_CheckedChanged(object sender, EventArgs e)
+        {
+            if (vedo.Checked)
+            {
+                tamado.Checked = false;
+                kem.Checked = false;
+            }
+        }
+
+        private void tamado_CheckedChanged(object sender, EventArgs e)
+        {
+            if (tamado.Checked)
+            {
+                vedo.Checked = false;
+                kem.Checked = false;
+            }
+        }
+        #endregion
+
+        private void web_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
         {
             url.Text = web.Url.ToString();
         }

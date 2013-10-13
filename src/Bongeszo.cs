@@ -21,6 +21,8 @@ namespace bot_v4
         //------------------------GUI vars
         private static Label url = new Label(); //url label
         private static Button betoltve = new Button(); //villages data load button
+        private static Button bbb = new Button(); //navigate left
+        private static Button jjj = new Button(); //navigate right
         //------------------------
 
         public Bongeszo(string data)
@@ -180,12 +182,24 @@ namespace bot_v4
                 betoltve.Size = new Size(20, 20);
                 betoltve.BackColor = Color.Red;
                 betoltve.Click += new EventHandler(betoltve_Click); //data load/reload
-                //------------------------
+                //------------------------Navigate left
+                Controls.Add(bbb);
+                bbb.Text = "<-";
+                bbb.Size = new System.Drawing.Size(30, 22);
+                bbb.Location = new Point(415, 4);
+                bbb.Click += new EventHandler(bbb_Click);
+                //------------------------Navigate right
+                Controls.Add(jjj);
+                jjj.Text = "->";
+                jjj.Size = new System.Drawing.Size(30, 22);
+                jjj.Location = new Point(455, 4);
+                jjj.Click += new EventHandler(jjj_Click);
 
                 pirosgomb.Start();
             }
         }
 
+        #region betoltve
         void betoltve_Click(object sender, EventArgs e)
         {
             //------------------------Color check, always should run without any problem
@@ -268,6 +282,62 @@ namespace bot_v4
             mehet = true;
             web.Navigate("http://" + "hu17.klanhaboru.hu/game.php?village=" + falvak[0].id + "&screen=overview_villages");
         }
+        #endregion
+
+        #region Navigate_left_right
+        private string bbb_jjj(string merre)
+        {
+            //------------------------Navigate
+            //------------------------Get the current village's ID
+            string seged1 = url.Text.Substring(0, 43); //begin
+            string seged2 = url.Text.Substring(48); //end
+            if (seged2.Substring(0, 1) != "&") seged2 = url.Text.Substring(49);
+            string seged3 = url.Text.Substring(43, 6); //id
+            if (seged3.Substring(5, 1) == "&") seged3 = url.Text.Substring(43, 5);
+            int i = 0;
+            int seged4 = 0;
+            int faluseged = Convert.ToInt32(seged3);
+            while ((faluseged != falvak[i].id) && (i < falvak.Length))
+                i++;
+            if (merre == "balra") //Navigate left
+            {
+                //------------------------Set the (current - 1) village's ID
+                if (i < falvak.Length)
+                {
+                    if (i - 1 >= 0)
+                        seged4 = falvak[i - 1].id;
+                    else
+                        seged4 = falvak[falvak.Length - 1].id;
+                }
+            }
+            else if (merre == "jobbra") //Navigate right
+            {
+                //------------------------Set the (current + 1) village's ID
+                if (i < falvak.Length)
+                {
+                    if (i + 1 < falvak.Length)
+                        seged4 = falvak[i + 1].id;
+                    else
+                        seged4 = falvak[0].id;
+                }
+            }
+            string seged5 = seged1 + seged4 + seged2; //URL for navigate
+            return seged5;
+        }
+
+
+        void bbb_Click(object sender, EventArgs e)
+        {
+            //------------------------Navigate left
+            web.Navigate(bbb_jjj("balra"));
+        }
+
+        void jjj_Click(object sender, EventArgs e)
+        {
+            //------------------------Navigate right
+            web.Navigate(bbb_jjj("jobbra"));
+        }
+        #endregion
 
         void web_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
         {

@@ -7,11 +7,12 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.IO;
+using Microsoft.Win32;
 
 namespace bot_v4
 {
     public partial class Bongeszo : Form
-    {
+    { 
         #region Vars
         private static Random R = new Random();
         private static WebBrowser web;
@@ -21,7 +22,7 @@ namespace bot_v4
         private static Falvak[] falvak; //villages data: ID, name, koord
         private static int kattintas = 0; //nm_button click count
         private static int[] segednem2; //temp array for sorted villages
-        #endregion
+        #endregion       
         //------------------------GUI vars
         #region GUI vars
         private static Label url = new Label(); //url label
@@ -59,6 +60,9 @@ namespace bot_v4
         public Bongeszo(string data)
         {
             InitializeComponent();
+            //------------------------
+            Registry.SetValue("HKEY_CURRENT_USER\\AppEvents\\Schemes\\Apps\\Explorer\\Navigating\\.Current", "", "NULL"); //IE mute
+            //Registry.SetValue("HKEY_CURRENT_USER\\AppEvents\\Schemes\\Apps\\Explorer\\Navigating\\.Current","","C:\Windows\Media\Cityscape\Windows Navigation Start.wav"); //IE unmute
             //------------------------Window max height, half width
             this.Size = new System.Drawing.Size(Screen.GetWorkingArea(this).Width / 2, Screen.GetWorkingArea(this).Height);
             this.Location = new Point(0, 0);
@@ -66,6 +70,7 @@ namespace bot_v4
             this.data = data;
             Gombok_fel();
             Timer_init();
+
             Belep();
         }
 
@@ -347,9 +352,9 @@ namespace bot_v4
                             element.SetAttribute("value", "wood");
 
                         else if (agyag < fa && agyag < vas)
-                                element.SetAttribute("value", "stone");
+                            element.SetAttribute("value", "stone");
                         else if (vas < fa && vas < agyag)
-                                element.SetAttribute("value", "iron");
+                            element.SetAttribute("value", "iron");
                     }
                     //------------------------Max value
                     if (element.GetAttribute("name") == "res_buy")
@@ -453,7 +458,7 @@ namespace bot_v4
         private void ujbal_Click(object sender, EventArgs e)
         {
             //------------------------Navigate left
-            web.Navigate(ujb_ujj("balra", segednem2));            
+            web.Navigate(ujb_ujj("balra", segednem2));
         }
         #endregion
 
@@ -691,33 +696,36 @@ namespace bot_v4
             {
                 //------------------------Set the village types
                 #region vill_type
-                vi = new Village_ID(url.Text, null, null, null);
-                string seged = vi.seged3.ToString();
-                string seged2;
-                string[] seged3;
-                bool megvan = false;
-                StreamReader sr = new StreamReader("tipus.txt");
-                while (!sr.EndOfStream)
+                if (File.Exists("tipus.txt"))
                 {
-                    seged2 = sr.ReadLine();
-                    seged3 = seged2.Split(' ');
-                    if (seged == seged3[0])
+                    vi = new Village_ID(url.Text, null, null, null);
+                    string seged = vi.seged3.ToString();
+                    string seged2;
+                    string[] seged3;
+                    bool megvan = false;
+                    StreamReader sr = new StreamReader("tipus.txt");
+                    while (!sr.EndOfStream)
                     {
-                        if (seged3[1] == "támadó")
-                            tamado.Checked = true;
-                        else if (seged3[1] == "védő")
-                            vedo.Checked = true;
-                        else if (seged3[1] == "kém")
-                            kem.Checked = true;
-                        megvan = true;
+                        seged2 = sr.ReadLine();
+                        seged3 = seged2.Split(' ');
+                        if (seged == seged3[0])
+                        {
+                            if (seged3[1] == "támadó")
+                                tamado.Checked = true;
+                            else if (seged3[1] == "védő")
+                                vedo.Checked = true;
+                            else if (seged3[1] == "kém")
+                                kem.Checked = true;
+                            megvan = true;
+                        }
                     }
-                }
-                sr.Close();
-                if (!megvan)
-                {
-                    tamado.Checked = false;
-                    vedo.Checked = false;
-                    kem.Checked = false;
+                    sr.Close();
+                    if (!megvan)
+                    {
+                        tamado.Checked = false;
+                        vedo.Checked = false;
+                        kem.Checked = false;
+                    }
                 }
                 #endregion
                 //------------------------
